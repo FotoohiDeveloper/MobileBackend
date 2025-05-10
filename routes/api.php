@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\OtpController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\V1\AuthController;
 use App\Http\Controllers\V1\WalletController;
@@ -15,12 +16,10 @@ Route::prefix('v1')->group(function() {
 
     // Auth & Identity
     Route::prefix('auth')->group(function () {
-        Route::post('register', [AuthController::class,'register'])->name('api.register');
-        Route::post('login', [AuthController::class,'login'])->name('api.login');
-        Route::post('verify-code', [AuthController::class,'verifyCode'])->name('api.verify-code');
-        Route::post('logout', [AuthController::class,'logout'])->name('api.logout');
-        Route::get('me', [AuthController::class,'me'])->name('api.me');
-        Route::post('refresh-token', [AuthController::class,'refreshToken'])->name('api.refresh-token');
+        Route::prefix('otp')->group(function () {
+            Route::post('/send', [OtpController::class, 'send']);
+            Route::post('/verify', [OtpController::class, 'verify']);
+        });
     });
 
     // Wallet
