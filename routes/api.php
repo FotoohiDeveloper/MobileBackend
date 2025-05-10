@@ -4,7 +4,7 @@ use App\Http\Controllers\OtpController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\V1\AuthController;
-use App\Http\Controllers\V1\WalletController;
+use App\Http\Controllers\WalletController;
 use App\Http\Controllers\V1\PaymentController;
 use App\Http\Controllers\V1\TransportController;
 use App\Http\Controllers\V1\SubscriptionController;
@@ -37,10 +37,12 @@ Route::prefix('v1')->group(function () {
 
     // Wallet
     Route::prefix('wallet')->group(function () {
-        Route::get('/', [WalletController::class, 'show'])->name('api.wallet');
-        Route::get('/{id}/transactions', [WalletController::class, 'transactions'])->name('api.my-transactions');
-        Route::post('/topup', [WalletController::class, 'topup'])->name('api.topup');
-        Route::post('/convert', [WalletController::class, 'convert'])->name('api.wallet.convert');
+        Route::get('/', [WalletController::class, 'index']);
+    Route::post('/transfer', [WalletController::class, 'transfer']);
+    Route::post('/convert', [WalletController::class, 'convert']);
+    Route::post('/commit', [WalletController::class, 'commit']);
+    Route::post('/commit/increase', [WalletController::class, 'increaseCommitment']);
+    Route::post('/commit/consume', [WalletController::class, 'consumeCommitment']);
     });
 
     // Payment
