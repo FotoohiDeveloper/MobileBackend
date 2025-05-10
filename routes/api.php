@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\V1\AuthController;
 use App\Http\Controllers\V1\WalletController;
@@ -12,7 +13,7 @@ use App\Http\Controllers\V1\RateController;
 use App\Http\Controllers\V1\Tourist\TouristAuthController;
 use App\Http\Controllers\V1\Tourist\TouristPaymentController;
 
-Route::prefix('v1')->group(function() {
+Route::prefix('v1')->group(function () {
 
     // Auth & Identity
     Route::prefix('auth')->group(function () {
@@ -22,12 +23,24 @@ Route::prefix('v1')->group(function() {
         });
     });
 
+    // Support
+    Route::prefix('support')->group(function () {
+        Route::get('/tickets', [TicketController::class, 'index']);
+        Route::get('/tickets/{id}', [TicketController::class, 'show']);
+        Route::post('/tickets', [TicketController::class, 'store']);
+        Route::put('/tickets/{id}', [TicketController::class, 'update']);
+        Route::post('/tickets/{id}/assign', [TicketController::class, 'assign']);
+        Route::post('/tickets/{id}/message', [TicketController::class, 'sendMessage']);
+        Route::delete('/tickets/{id}', [TicketController::class, 'destroy']);
+        Route::get('/departments', [TicketController::class, 'departments']);
+    })->middleware('auth:sanctum');
+
     // Wallet
     Route::prefix('wallet')->group(function () {
-        Route::get('/', [WalletController::class,'show'])->name('api.wallet');
-        Route::get('/{id}/transactions', [WalletController::class,'transactions'])->name('api.my-transactions');
-        Route::post('/topup', [WalletController::class,'topup'])->name('api.topup');
-        Route::post('/convert', [WalletController::class,'convert'])->name('api.wallet.convert');
+        Route::get('/', [WalletController::class, 'show'])->name('api.wallet');
+        Route::get('/{id}/transactions', [WalletController::class, 'transactions'])->name('api.my-transactions');
+        Route::post('/topup', [WalletController::class, 'topup'])->name('api.topup');
+        Route::post('/convert', [WalletController::class, 'convert'])->name('api.wallet.convert');
     });
 
     // Payment
