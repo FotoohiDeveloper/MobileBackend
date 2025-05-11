@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Currency;
 use App\Models\Wallet;
+use App\Models\WalletBalance;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -17,63 +19,80 @@ class WalletService
     {
         $fromWallet = Wallet::where('user_id', $fromUserId)
             ->where('type', $walletType)
+            ->firstOrFail();
+
+        $fromBalance = $fromWallet->balances()
             ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
             ->firstOrFail();
 
-        if ($fromWallet->type === 'foreign' && $fromWallet->has_commitment) {
-            $availableBalance = $fromWallet->balance - $fromWallet->committed_balance;
+        if ($fromWallet->has_commitment) {
+            $availableBalance = $fromBalance->balance - $fromBalance->committed_balance;
             if ($availableBalance < $amount) {
                 throw new \Exception('موجودی قابل انتقال کافی نیست (بخشی از موجودی بلاک شده است)');
             }
-        } elseif ($fromWallet->balance < $amount) {
+        } elseif ($fromBalance->balance < $amount) {
             throw new \Exception('موجودی کافی نیست');
         }
 
         $toUser = User::where('phone', $toPhone)->firstOrFail();
         $toWallet = Wallet::where('user_id', $toUser->id)
             ->where('type', $walletType)
+            ->firstOrFail();
+
+        $toBalance = $toWallet->balances()
             ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
             ->firstOrFail();
 
         // فقط کیف پول‌های ارزی می‌توانند انتقال ارز داشته باشند
         if ($fromWallet->type !== 'foreign' || $toWallet->type !== 'foreign') {
-            if ($fromWallet->currency->code !== 'IRR' || $toWallet->currency->code !== 'IRR') {
+            if ($fromBalance->currency->code !== 'IRR' || $toBalance->currency->code !== 'IRR') {
                 throw new \Exception('فقط کیف پول‌های ارزی می‌توانند ارزهای غیرریالی انتقال دهند');
             }
         }
 
-        DB::transaction(function () use ($fromWallet, $toWallet, $amount) {
-            $fromWallet->balance -= $amount;
-            $toWallet->balance += $amount;
-            $fromWallet->save();
-            $toWallet->save();
+        DB::transaction(function () use ($fromWallet, $toWallet, $fromBalance, $toBalance, $amount) {
+            $fromBalance->balance -= $amount;
+            $toBalance->balance += $amount;
+            $fromBalance->save();
+            $toBalance->save();
 
             Transaction::create([
                 'from_wallet_id' => $fromWallet->id,
                 'to_wallet_id' => $toWallet->id,
                 'amount' => $amount,
                 'type' => 'transfer',
-                'description' => "انتقال از {$fromWallet->user->phone} به {$toWallet->user->phone}",
+                'description' => "انتقال $amount {$fromBalance->currency->code} از {$fromWallet->user->phone} به {$toWallet->user->phone}",
             ]);
         });
 
         return true;
     }
 
-    // تبدیل ارز فقط برای کیف پول ارزی
+    // تبدیل ارز در کیف پول ارزی
     public function convertCurrency($userId, $fromCurrencyCode, $toCurrencyCode, $amount)
     {
-        $fromWallet = Wallet::where('user_id', $userId)
+        $wallet = Wallet::where('user_id', $userId)
             ->where('type', 'foreign')
+            ->firstOrFail();
+
+        $fromBalance = $wallet->balances()
             ->whereHas('currency', fn($q) => $q->where('code', $fromCurrencyCode))
             ->firstOrFail();
 
-        $toWallet = Wallet::where('user_id', $userId)
-            ->where('type', 'foreign')
+        $toBalance = $wallet->balances()
             ->whereHas('currency', fn($q) => $q->where('code', $toCurrencyCode))
-            ->firstOrFail();
+            ->first();
 
-        $availableBalance = $fromWallet->has_commitment ? $fromWallet->balance - $fromWallet->committed_balance : $fromWallet->balance;
+        // اگر ارز مقصد وجود ندارد، آن را ایجاد کن
+        if (!$toBalance) {
+            $toCurrency = Currency::where('code', $toCurrencyCode)->firstOrFail();
+            $toBalance = $wallet->balances()->create([
+                'currency_id' => $toCurrency->id,
+                'balance' => 0,
+            ]);
+        }
+
+        $availableBalance = $wallet->has_commitment ? $fromBalance->balance - $fromBalance->committed_balance : $fromBalance->balance;
         if ($availableBalance < $amount) {
             throw new \Exception('موجودی قابل تبدیل کافی نیست (بخشی از موجودی بلاک شده است)');
         }
@@ -81,15 +100,15 @@ class WalletService
         $exchangeRate = $this->getExchangeRate($fromCurrencyCode, $toCurrencyCode);
         $convertedAmount = $amount * $exchangeRate;
 
-        DB::transaction(function () use ($fromWallet, $toWallet, $amount, $convertedAmount) {
-            $fromWallet->balance -= $amount;
-            $toWallet->balance += $convertedAmount;
-            $fromWallet->save();
-            $toWallet->save();
+        DB::transaction(function () use ($wallet, $fromBalance, $toBalance, $amount, $convertedAmount) {
+            $fromBalance->balance -= $amount;
+            $toBalance->balance += $convertedAmount;
+            $fromBalance->save();
+            $toBalance->save();
 
             Transaction::create([
-                'from_wallet_id' => $fromWallet->id,
-                'to_wallet_id' => $toWallet->id,
+                'from_wallet_id' => $wallet->id,
+                'to_wallet_id' => $wallet->id,
                 'amount' => $amount,
                 'type' => 'conversion',
                 // 'description' => "تبدیل $amount $fromCurrencyCode به $convertedAmount $toCurrencyCode",
@@ -104,12 +123,15 @@ class WalletService
     {
         $wallet = Wallet::where('user_id', $userId)
             ->where('type', 'foreign')
-            ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
             ->firstOrFail();
 
         if ($wallet->has_commitment) {
             throw new \Exception('شما قبلاً یک قرارداد تعهد دارید. فقط می‌توانید مبلغ را افزایش دهید.');
         }
+
+        $balance = $wallet->balances()
+            ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
+            ->firstOrFail();
 
         $exchangeRate = $this->getExchangeRate($currencyCode, 'IRR');
         $amountRial = $amount * $exchangeRate;
@@ -118,12 +140,13 @@ class WalletService
             throw new \Exception('حداقل مبلغ تعهد باید معادل ۱ میلیون تومان باشد');
         }
 
-        if ($wallet->balance < $amount) {
+        if ($balance->balance < $amount) {
             throw new \Exception('موجودی کافی برای تعهد نیست');
         }
 
-        DB::transaction(function () use ($wallet, $amount) {
-            $wallet->committed_balance = $amount;
+        DB::transaction(function () use ($wallet, $balance, $amount) {
+            $balance->committed_balance = $amount;
+            $balance->save();
             $wallet->has_commitment = true;
             $wallet->save();
 
@@ -131,7 +154,7 @@ class WalletService
                 'from_wallet_id' => $wallet->id,
                 'amount' => $amount,
                 'type' => 'commitment',
-                'description' => "تعهد $amount {$wallet->currency->code} معادل " . ($amount * $this->getExchangeRate($wallet->currency->code, 'IRR')) . " IRR",
+                'description' => "تعهد $amount {$balance->currency->code} معادل " . ($amount * $this->getExchangeRate($balance->currency->code, 'IRR')) . " IRR",
             ]);
         });
 
@@ -143,26 +166,29 @@ class WalletService
     {
         $wallet = Wallet::where('user_id', $userId)
             ->where('type', 'foreign')
-            ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
             ->firstOrFail();
 
         if (!$wallet->has_commitment) {
             throw new \Exception('ابتدا باید یک قرارداد تعهد ایجاد کنید');
         }
 
-        if ($wallet->balance < $additionalAmount + $wallet->committed_balance) {
+        $balance = $wallet->balances()
+            ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
+            ->firstOrFail();
+
+        if ($balance->balance < $additionalAmount + $balance->committed_balance) {
             throw new \Exception('موجودی کافی برای افزایش تعهد نیست');
         }
 
-        DB::transaction(function () use ($wallet, $additionalAmount) {
-            $wallet->committed_balance += $additionalAmount;
-            $wallet->save();
+        DB::transaction(function () use ($wallet, $balance, $additionalAmount) {
+            $balance->committed_balance += $additionalAmount;
+            $balance->save();
 
             Transaction::create([
                 'from_wallet_id' => $wallet->id,
                 'amount' => $additionalAmount,
                 'type' => 'commitment_increase',
-                'description' => "افزایش تعهد به میزان $additionalAmount {$wallet->currency->code}",
+                'description' => "افزایش تعهد به میزان $additionalAmount {$balance->currency->code}",
             ]);
         });
 
@@ -174,33 +200,37 @@ class WalletService
     {
         $wallet = Wallet::where('user_id', $userId)
             ->where('type', 'foreign')
-            ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
             ->firstOrFail();
 
         if (!$wallet->has_commitment) {
             throw new \Exception('هیچ قرارداد تعهدی وجود ندارد');
         }
 
+        $balance = $wallet->balances()
+            ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
+            ->firstOrFail();
+
         $exchangeRate = $this->getExchangeRate($currencyCode, 'IRR');
         $amountInCurrency = $amountRial / $exchangeRate;
 
-        if ($amountInCurrency > $wallet->committed_balance) {
+        if ($amountInCurrency > $balance->committed_balance) {
             throw new \Exception('مبلغ تعهدی کافی نیست');
         }
 
-        DB::transaction(function () use ($wallet, $amountInCurrency) {
-            $wallet->committed_balance -= $amountInCurrency;
-            $wallet->balance -= $amountInCurrency;
-            if ($wallet->committed_balance <= 0) {
+        DB::transaction(function () use ($wallet, $balance, $amountInCurrency) {
+            $balance->committed_balance -= $amountInCurrency;
+            $balance->balance -= $amountInCurrency;
+            if ($balance->committed_balance <= 0) {
                 $wallet->has_commitment = false;
+                $wallet->save();
             }
-            $wallet->save();
+            $balance->save();
 
             Transaction::create([
                 'from_wallet_id' => $wallet->id,
                 'amount' => $amountInCurrency,
                 'type' => 'commitment_consume',
-                'description' => "مصرف $amountInCurrency {$wallet->currency->code} از تعهد",
+                'description' => "مصرف $amountInCurrency {$balance->currency->code} از تعهد",
             ]);
         });
 

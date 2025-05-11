@@ -6,16 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Wallet extends Model
 {
-    protected $fillable = ['user_id', 'currency_id', 'type', 'balance', 'committed_balance', 'has_commitment'];
+    protected $fillable = ['user_id', 'type', 'has_commitment'];
 
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function currency()
+    public function balances()
     {
-        return $this->belongsTo(Currency::class);
+        return $this->hasMany(WalletBalance::class);
     }
 
     public function transactions()
