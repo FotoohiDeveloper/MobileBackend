@@ -20,69 +20,72 @@ Route::prefix('v1')->group(function () {
         Route::prefix('otp')->group(function () {
             Route::post('/send', [OtpController::class, 'send']);
             Route::post('/verify', [OtpController::class, 'verify']);
+            Route::post('/verify-identity', [OtpController::class, 'verifyIdentity']);
         });
     });
 
-    // Support
-    Route::prefix('support')->group(function () {
-        Route::get('/tickets', [TicketController::class, 'index']);
-        Route::get('/tickets/{id}', [TicketController::class, 'show']);
-        Route::post('/tickets', [TicketController::class, 'store']);
-        Route::put('/tickets/{id}', [TicketController::class, 'update']);
-        Route::post('/tickets/{id}/assign', [TicketController::class, 'assign']);
-        Route::post('/tickets/{id}/message', [TicketController::class, 'sendMessage']);
-        Route::delete('/tickets/{id}', [TicketController::class, 'destroy']);
-        Route::get('/departments', [TicketController::class, 'departments']);
-    })->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->group(function () {
+        // Support
+        Route::prefix('support')->group(function () {
+            Route::get('/tickets', [TicketController::class, 'index']);
+            Route::get('/tickets/{id}', [TicketController::class, 'show']);
+            Route::post('/tickets', [TicketController::class, 'store']);
+            Route::put('/tickets/{id}', [TicketController::class, 'update']);
+            Route::post('/tickets/{id}/assign', [TicketController::class, 'assign']);
+            Route::post('/tickets/{id}/message', [TicketController::class, 'sendMessage']);
+            Route::delete('/tickets/{id}', [TicketController::class, 'destroy']);
+            Route::get('/departments', [TicketController::class, 'departments']);
+        })->middleware('auth:sanctum');
 
-    // Wallet
-    Route::prefix('wallet')->group(function () {
-        Route::get('/', [WalletController::class, 'index']);
-    Route::post('/transfer', [WalletController::class, 'transfer']);
-    Route::post('/convert', [WalletController::class, 'convert']);
-    Route::post('/commit', [WalletController::class, 'commit']);
-    Route::post('/commit/increase', [WalletController::class, 'increaseCommitment']);
-    Route::post('/commit/consume', [WalletController::class, 'consumeCommitment']);
-    });
+        // Wallet
+        Route::prefix('wallet')->group(function () {
+            Route::get('/', [WalletController::class, 'index']);
+            Route::post('/transfer', [WalletController::class, 'transfer']);
+            Route::post('/convert', [WalletController::class, 'convert']);
+            Route::post('/commit', [WalletController::class, 'commit']);
+            Route::post('/commit/increase', [WalletController::class, 'increaseCommitment']);
+            Route::post('/commit/consume', [WalletController::class, 'consumeCommitment']);
+        });
 
-    // Payment
-    Route::prefix('payment')->group(function () {
-        Route::post('/initiate', [PaymentController::class, 'initiate'])->name('api.payment.initiate');
-        Route::post('/verify', [PaymentController::class, 'verify'])->name('api.payment.verify');
-        Route::get('/history', [PaymentController::class, 'history'])->name('api.payment.history');
-    });
+        // Payment
+        Route::prefix('payment')->group(function () {
+            Route::post('/initiate', [PaymentController::class, 'initiate'])->name('api.payment.initiate');
+            Route::post('/verify', [PaymentController::class, 'verify'])->name('api.payment.verify');
+            Route::get('/history', [PaymentController::class, 'history'])->name('api.payment.history');
+        });
 
-    // Exchange Rate
-    Route::get('/rate/usd', [RateController::class, 'usd'])->name('api.rate.usd');
+        // Exchange Rate
+        Route::get('/rate/usd', [RateController::class, 'usd'])->name('api.rate.usd');
 
-    // Transport
-    Route::prefix('transport')->group(function () {
-        Route::get('/routes', [TransportController::class, 'routes'])->name('api.transport.routes');
-        Route::get('/stations', [TransportController::class, 'stations'])->name('api.transport.stations');
-        Route::get('/nearby', [TransportController::class, 'nearby'])->name('api.transport.nearby');
-        Route::post('/ride/start', [TransportController::class, 'startRide'])->name('api.transport.ride.start');
-        Route::post('/ride/end', [TransportController::class, 'endRide'])->name('api.transport.ride.end');
-        Route::get('/ride/history', [TransportController::class, 'history'])->name('api.transport.ride.history');
-    });
+        // Transport
+        Route::prefix('transport')->group(function () {
+            Route::get('/routes', [TransportController::class, 'routes'])->name('api.transport.routes');
+            Route::get('/stations', [TransportController::class, 'stations'])->name('api.transport.stations');
+            Route::get('/nearby', [TransportController::class, 'nearby'])->name('api.transport.nearby');
+            Route::post('/ride/start', [TransportController::class, 'startRide'])->name('api.transport.ride.start');
+            Route::post('/ride/end', [TransportController::class, 'endRide'])->name('api.transport.ride.end');
+            Route::get('/ride/history', [TransportController::class, 'history'])->name('api.transport.ride.history');
+        });
 
-    // QR
-    Route::prefix('qr')->group(function () {
-        Route::post('/generate', [QRController::class, 'generate'])->name('api.qr.generate');
-        Route::post('/scan', [QRController::class, 'scan'])->name('api.qr.scan');
-    });
+        // QR
+        Route::prefix('qr')->group(function () {
+            Route::post('/generate', [QRController::class, 'generate'])->name('api.qr.generate');
+            Route::post('/scan', [QRController::class, 'scan'])->name('api.qr.scan');
+        });
 
-    // Subscriptions
-    Route::prefix('subscriptions')->group(function () {
-        Route::get('/', [SubscriptionController::class, 'index'])->name('api.subscriptions');
-        Route::get('/my', [SubscriptionController::class, 'my'])->name('api.subscriptions.my');
-        Route::post('/purchase', [SubscriptionController::class, 'purchase'])->name('api.subscriptions.purchase');
-    });
+        // Subscriptions
+        Route::prefix('subscriptions')->group(function () {
+            Route::get('/', [SubscriptionController::class, 'index'])->name('api.subscriptions');
+            Route::get('/my', [SubscriptionController::class, 'my'])->name('api.subscriptions.my');
+            Route::post('/purchase', [SubscriptionController::class, 'purchase'])->name('api.subscriptions.purchase');
+        });
 
-    // Tourist-specific
-    Route::prefix('tourist')->group(function () {
-        Route::post('auth/register', [TouristAuthController::class, 'register'])->name('api.tourist.register');
-        Route::post('card/activate', [TouristAuthController::class, 'activateCard'])->name('api.tourist.card.activate');
-        Route::post('payment/preview', [TouristPaymentController::class, 'preview'])->name('api.tourist.payment.preview');
-        Route::post('payment/pay', [TouristPaymentController::class, 'pay'])->name('api.tourist.payment.pay');
+        // Tourist-specific
+        Route::prefix('tourist')->group(function () {
+            Route::post('auth/register', [TouristAuthController::class, 'register'])->name('api.tourist.register');
+            Route::post('card/activate', [TouristAuthController::class, 'activateCard'])->name('api.tourist.card.activate');
+            Route::post('payment/preview', [TouristPaymentController::class, 'preview'])->name('api.tourist.payment.preview');
+            Route::post('payment/pay', [TouristPaymentController::class, 'pay'])->name('api.tourist.payment.pay');
+        });
     });
 });

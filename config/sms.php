@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'default' => env('SMS_PROVIDER', 'smsir'), // Default SMS provider
+    'default' => env('SMS_PROVIDER', 'melipayamak'), // Default SMS provider
 
     'providers' => [
         'smsir' => [
@@ -9,11 +9,10 @@ return [
             'verify_template' => env('SMSIR_VERIFY'),
             'endpoint' => 'https://api.sms.ir/v1/send/verify',
         ],
-        // Add new providers here, e.g.:
-        // 'kavenegar' => [
-        //     'api_key' => env('KAVENEGAR_TOKEN'),
-        //     'verify_template' => env('KAVENEGAR_VERIFY'),
-        //     'endpoint' => 'https://api.kavenegar.com/v1/verify',
-        // ],
+        'melipayamak' => [
+            'api_key' => env('MELIPAYAMAK_TOKEN'),
+            'verify_template' => env('MELIPAYAMAK_VERIFY'),
+            'endpoint' => 'https://console.melipayamak.com/api/send/shared',
+        ],
     ],
 ];

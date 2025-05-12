@@ -22,14 +22,22 @@ class OtpService
         $providerClass = match ($providerName) {
             'smsir' => \App\Services\Sms\SmsIrProvider::class,
             'kavenegar' => \App\Services\Sms\KavenegarProvider::class,
+            'melipayamak' => \App\Services\Sms\MelipayamakProvider::class,
             default => throw new Exception("Unsupported SMS provider: $providerName"),
         };
 
         $this->smsProvider = new $providerClass($config);
     }
 
-    public function generate(string $identity, string $channel, string $type, ?User $user = null): string
+    public function generate(string $identity, string $channel): string
     {
+        // تبدیل شماره تلفن با پیش‌شماره +98 به 09
+        $normalizedIdentity = $identity;
+        if ($channel === 'sms' && str_starts_with($identity, '+98')) {
+            $normalizedIdentity = '0' . substr($identity, 3);
+        }
+
+        // بررسی OTP اخیر
         $recentOtp = Otp::where('identity', $identity)
             ->where('created_at', '>=', now()->subMinute())
             ->first();
@@ -41,10 +49,8 @@ class OtpService
         $token = Str::uuid();
 
         $otp = Otp::create([
-            'user_id' => $user?->id,
-            'identity' => $identity,
+            'identity' => $identity, // ذخیره شماره اصلی
             'channel' => $channel,
-            'type' => $type,
             'code' => $code,
             'token' => $token,
             'user_ip' => request()->ip(),
@@ -53,8 +59,12 @@ class OtpService
 
         try {
             if ($channel === 'sms') {
-                if (!$this->smsProvider->send($identity, $code)) {
-                    throw new Exception('Failed to send SMS');
+                if (!$this->smsProvider->send($normalizedIdentity, $code)) {
+                    Log::error('SMS sending failed for provider: ' . config('sms.default'), [
+                        'phone' => $normalizedIdentity,
+                        'code' => $code,
+                    ]);
+                    throw new Exception('Failed to send SMS. Please check provider configuration or try again later.');
                 }
             } elseif ($channel === 'email') {
                 Mail::raw("Your OTP code is: $code", function ($message) use ($identity) {
@@ -62,8 +72,12 @@ class OtpService
                 });
             }
         } catch (Exception $e) {
-            Log::error('OTP sending failed: ' . $e->getMessage());
-            throw new Exception('Unable to send OTP. Please try again.');
+            Log::error('OTP sending failed: ' . $e->getMessage(), [
+                'channel' => $channel,
+                'identity' => $normalizedIdentity,
+                'provider' => config('sms.default'),
+            ]);
+            throw new Exception('Unable to send OTP: ' . $e->getMessage());
         }
 
         return $token;
@@ -85,6 +99,31 @@ class OtpService
         }
 
         $otp->update(['is_verified' => true]);
-        return ['status' => true, 'message' => 'OTP verified.', 'otp' => $otp, 'code' => 200];
+
+        // بررسی وجود کاربر
+        $user = User::where('phone_number', $otp->identity)
+            ->orWhere('email', $otp->identity)
+            ->first();
+
+        if ($user) {
+            // کاربر موجود: صدور توکن Sanctum
+            $authToken = $user->createToken('auth_token')->plainTextToken;
+            return [
+                'status' => true,
+                'message' => 'OTP verified. You are now logged in.',
+                'auth_token' => $authToken,
+                'code' => 200,
+            ];
+        }
+
+        // کاربر جدید: نیاز به احراز هویت هویتی
+        return [
+            'status' => true,
+            'message' => 'OTP verified. Please provide birth date and national code to complete registration.',
+            'otp_token' => $otp->token,
+            'next_step' => 'identity_verification',
+            'code' => 200,
+        ];
     }
 }
+
