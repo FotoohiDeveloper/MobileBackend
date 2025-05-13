@@ -16,13 +16,12 @@ class User extends Authenticatable
         return $this->hasMany(Wallet::class);
     }
 
-    public function createDefaultWallets()
+    public function createDefaultWallets($defaultIRR = 0, $defaultUSD = 0, $defaultEUR = 0, $defaultGBP = 0)
     {
         $irrCurrency = Currency::where('code', 'IRR')->firstOrFail();
         $usdCurrency = Currency::where('code', 'USD')->firstOrFail();
         $eurCurrency = Currency::where('code', 'EUR')->firstOrFail();
         $gbpCurrency = Currency::where('code', 'GBP')->firstOrFail();
-        $jpyCurrency = Currency::where('code', 'JPY')->firstOrFail();
 
         // کیف پول شهروندی
         $this->wallets()->create(['type' => 'citizen'])->balances()->create([
@@ -33,16 +32,15 @@ class User extends Authenticatable
         // کیف پول ریالی عادی
         $this->wallets()->create(['type' => 'normal'])->balances()->create([
             'currency_id' => $irrCurrency->id,
-            'balance' => 0,
+            'balance' => $defaultIRR,
         ]);
 
         // کیف پول ارزی (چندمنظوره)
         $foreignWallet = $this->wallets()->create(['type' => 'foreign']);
         $foreignWallet->balances()->createMany([
-            ['currency_id' => $usdCurrency->id, 'balance' => 0],
-            ['currency_id' => $eurCurrency->id, 'balance' => 0],
-            ['currency_id' => $gbpCurrency->id, 'balance' => 0],
-            ['currency_id' => $jpyCurrency->id, 'balance' => 0],
+            ['currency_id' => $usdCurrency->id, 'balance' => $defaultUSD],
+            ['currency_id' => $eurCurrency->id, 'balance' => $defaultEUR],
+            ['currency_id' => $gbpCurrency->id, 'balance' => $defaultGBP],
         ]);
     }
 }

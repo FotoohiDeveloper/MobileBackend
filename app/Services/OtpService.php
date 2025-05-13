@@ -105,6 +105,7 @@ class OtpService
             return [
                 'status' => true,
                 'message' => 'OTP verified. You are now logged in.',
+                'user' => $user,
                 'auth_token' => $authToken,
                 'code' => 200,
             ];

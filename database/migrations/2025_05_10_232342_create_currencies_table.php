@@ -12,6 +12,7 @@ return new class extends Migration {
             $table->string('code', 3)->unique(); // کد ارز (مثل USD، IRR)
             $table->string('name'); // نام ارز
             $table->string('symbol')->nullable(); // نماد ارز
+            $table->bigInteger('price')->nullable(); // قیمت ارز
             $table->timestamps();
         });
     }

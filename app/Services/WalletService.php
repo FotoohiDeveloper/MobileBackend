@@ -256,4 +256,98 @@ class WalletService
         $rates = $response->json()['rates'];
         return $rates[$toCurrency] ?? throw new \Exception("نرخ برای $toCurrency یافت نشد");
     }
+
+    // انتقال از خزانه داری به کیف پول
+    public function transferFromTreasury($amount, $currencyId, $description, $wallet_id) {
+        $wallet = Wallet::find($wallet_id);
+        if (!$wallet) {
+            throw new \Exception('کیف پول یافت نشد');
+        }
+
+        $currency = Currency::find($currencyId);
+        if (!$currency) {
+            throw new \Exception('ارز یافت نشد');
+        }
+
+        $balance = WalletBalance::where('wallet_id', $wallet->id)
+            ->where('currency_id', $currencyId)
+            ->first();
+        if (!$balance) {
+            $balance = WalletBalance::create([
+                'wallet_id' => $wallet->id,
+                'currency_id' => $currencyId,
+                'balance' => 0,
+            ]);
+        }
+
+        $treasuryBalance = WalletBalance::where('wallet_id', 1)
+            ->where('currency_id', $currencyId)
+            ->first();
+        if ($treasuryBalance->balance < $amount) {
+            throw new \Exception('موجودی خزانه داری کافی نیست');
+        }
+        if ($amount <= 0) {
+            throw new \Exception('مبلغ باید بزرگتر از صفر باشد');
+        }
+
+        DB::transaction(function () use ($wallet, $balance, $amount, $description, $treasuryBalance) {
+            $balance->balance += $amount;
+            $balance->save();
+
+            $treasuryBalance->balance -= $amount;
+            $treasuryBalance->save();
+
+            Transaction::create([
+                'from_wallet_id' => 1 , // خزانه داری
+                'to_wallet_id' => $wallet->id,
+                'amount' => $amount,
+                'type' => 'transfer',
+                'description' => $description,
+            ]);
+        });
+
+        return true;
+    }
+
+    // انتقال از کیف پول به خزانه داری
+    public function transferToTreasury($amount, $currencyId, $description, $wallet_id) {
+        $wallet = Wallet::find($wallet_id);
+        if (!$wallet) {
+            throw new \Exception('کیف پول یافت نشد');
+        }
+
+        $currency = Currency::find($currencyId);
+        if (!$currency) {
+            throw new \Exception('ارز یافت نشد');
+        }
+
+        $balance = WalletBalance::where('wallet_id', $wallet->id)
+            ->where('currency_id', $currencyId)
+            ->first();
+        if (!$balance) {
+            throw new \Exception('موجودی کیف پول کافی نیست');
+        }
+
+        if ($balance->balance < $amount) {
+            throw new \Exception('موجودی کیف پول کافی نیست');
+        }
+        if ($amount <= 0) {
+            throw new \Exception('مبلغ باید بزرگتر از صفر باشد');
+        }
+
+        DB::transaction(function () use ($wallet, $balance, $amount, $description) {
+            $balance->balance -= $amount;
+            $balance->save();
+
+            Transaction::create([
+                'from_wallet_id' => $wallet->id,
+                'to_wallet_id' => 1 , // خزانه داری
+                'amount' => $amount,
+                'type' => 'transfer',
+                'description' => $description,
+            ]);
+        });
+
+        return true;
+    }
 }

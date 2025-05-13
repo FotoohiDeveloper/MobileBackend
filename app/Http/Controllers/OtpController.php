@@ -138,6 +138,7 @@ class OtpController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Registration and identity verification completed successfully.',
+                'user' => $user,
                 'auth_token' => $authToken,
             ], 200);
         } catch (\Exception $e) {
