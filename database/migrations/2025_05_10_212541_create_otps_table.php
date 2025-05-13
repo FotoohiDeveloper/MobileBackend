@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('identity', 100); // Increased length for phone/email
             $table->enum('channel', ['sms', 'email']);
-            $table->enum('type', ['login', 'register', 'recovery']);
+            $table->enum('type', ['login', 'register', 'recovery'])->default('login');
             $table->unsignedInteger('code'); // Changed to integer for 6-digit OTP
             $table->string('token')->unique();
             $table->ipAddress('user_ip')->nullable();

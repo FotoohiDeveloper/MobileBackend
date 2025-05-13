@@ -17,7 +17,7 @@ class WalletController extends Controller
 
     public function index(Request $request)
     {
-        $wallets = $request->user()->wallets()->with('currency')->get();
+        $wallets = $request->user()->wallets()->get();
         return response()->json($wallets);
     }
 

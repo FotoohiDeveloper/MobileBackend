@@ -31,12 +31,6 @@ class OtpService
 
     public function generate(string $identity, string $channel): string
     {
-        // تبدیل شماره تلفن با پیش‌شماره +98 به 09
-        $normalizedIdentity = $identity;
-        if ($channel === 'sms' && str_starts_with($identity, '+98')) {
-            $normalizedIdentity = '0' . substr($identity, 3);
-        }
-
         // بررسی OTP اخیر
         $recentOtp = Otp::where('identity', $identity)
             ->where('created_at', '>=', now()->subMinute())
@@ -59,9 +53,9 @@ class OtpService
 
         try {
             if ($channel === 'sms') {
-                if (!$this->smsProvider->send($normalizedIdentity, $code)) {
+                if (!$this->smsProvider->send($identity, $code)) {
                     Log::error('SMS sending failed for provider: ' . config('sms.default'), [
-                        'phone' => $normalizedIdentity,
+                        'phone' => $identity,
                         'code' => $code,
                     ]);
                     throw new Exception('Failed to send SMS. Please check provider configuration or try again later.');
@@ -74,7 +68,7 @@ class OtpService
         } catch (Exception $e) {
             Log::error('OTP sending failed: ' . $e->getMessage(), [
                 'channel' => $channel,
-                'identity' => $normalizedIdentity,
+                'identity' => $identity,
                 'provider' => config('sms.default'),
             ]);
             throw new Exception('Unable to send OTP: ' . $e->getMessage());

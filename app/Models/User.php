@@ -9,7 +9,7 @@ class User extends Authenticatable
 {
     use HasApiTokens;
 
-    protected $fillable = ['first_name', 'last_name', 'phone_number', 'national_code', 'passport_number', 'passport_expiry_date', 'is_verified', 'birth_date', 'image', 'email', 'phone', 'password', 'locale'];
+    protected $fillable = ['first_name', 'last_name', 'father_name', 'phone_number', 'national_code', 'passport_number', 'passport_expiry_date', 'is_verified', 'birth_date', 'image', 'email', 'phone', 'password', 'locale'];
 
     public function wallets()
     {
@@ -22,6 +22,7 @@ class User extends Authenticatable
         $usdCurrency = Currency::where('code', 'USD')->firstOrFail();
         $eurCurrency = Currency::where('code', 'EUR')->firstOrFail();
         $gbpCurrency = Currency::where('code', 'GBP')->firstOrFail();
+        $jpyCurrency = Currency::where('code', 'JPY')->firstOrFail();
 
         // کیف پول شهروندی
         $this->wallets()->create(['type' => 'citizen'])->balances()->create([
@@ -41,6 +42,7 @@ class User extends Authenticatable
             ['currency_id' => $usdCurrency->id, 'balance' => 0],
             ['currency_id' => $eurCurrency->id, 'balance' => 0],
             ['currency_id' => $gbpCurrency->id, 'balance' => 0],
+            ['currency_id' => $jpyCurrency->id, 'balance' => 0],
         ]);
     }
 }
