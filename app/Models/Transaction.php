@@ -6,7 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model
 {
-    protected $fillable = ['from_wallet_id', 'to_wallet_id', 'amount', 'type', 'description'];
+    protected $fillable = [
+        'from_wallet_id', 'to_wallet_id', 'currency_id', 'amount',
+        'type', 'description', 'created_at', 'updated_at'
+    ];
 
     public function fromWallet()
     {
@@ -16,5 +19,10 @@ class Transaction extends Model
     public function toWallet()
     {
         return $this->belongsTo(Wallet::class, 'to_wallet_id');
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
     }
 }

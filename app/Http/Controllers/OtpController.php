@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Currency;
 use App\Models\Otp;
 use App\Services\OtpService;
 use App\Models\User;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -15,10 +17,12 @@ use Illuminate\Support\Facades\Hash;
 class OtpController extends Controller
 {
     protected $otpService;
+    protected $walletService;
 
-    public function __construct(OtpService $otpService)
+    public function __construct(OtpService $otpService, WalletService $walletService)
     {
         $this->otpService = $otpService;
+        $this->walletService = $walletService;
     }
 
     public function send(Request $request)
@@ -122,7 +126,7 @@ class OtpController extends Controller
                 'first_name' => $identityData['first_name'],
                 'last_name' => $identityData['last_name'],
                 'father_name' => $identityData['father_name'],
-                'phone_number' => $normalizedIdentity,
+                'phone_number' => $otp->identity,
                 'national_code' => $data['national_code'],
                 'is_verified' => true,
                 'birth_date' => $data['birth_date'],
@@ -131,6 +135,13 @@ class OtpController extends Controller
 
             // ایجاد کیف پول‌ها
             $user->createDefaultWallets();
+            $wallets = $user->wallets();
+
+            $citizenWallet = $wallets->where('type', 'citizen')->first();
+
+            $irr = Currency::where('code', 'IRR')->first();
+
+            $this->walletService->transferTransaction(2, $citizenWallet->id, 100000, $irr->id, 'شارژ هدیه');
 
             // صدور توکن Sanctum
             $authToken = $user->createToken('auth_token')->plainTextToken;

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\WalletBalance;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Lang;
@@ -9,10 +10,12 @@ use Illuminate\Support\Facades\Lang;
 class WalletController extends Controller
 {
     protected $walletService;
+    protected $user;
 
-    public function __construct(WalletService $walletService)
+    public function __construct(WalletService $walletService, Request $request)
     {
         $this->walletService = $walletService;
+        $this->user = $request->user();
     }
 
     public function index(Request $request)
@@ -135,4 +138,26 @@ class WalletController extends Controller
             };
         }
     }
+
+    public function mainReq(Request $request)
+    {
+
+        $totalBalance = $this->user->getTotalBalances();
+        $recentTransactions = $this->user->recentTransactions();
+
+
+
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Wallets retrieved successfully',
+            'data' => [
+                'wallets' => $totalBalance['wallets'],
+                'total_balance' => $totalBalance['total_balance'],
+                'recent_transactions' => $recentTransactions,
+            ],
+        ]);
+    }
+
+
 }

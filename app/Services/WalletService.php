@@ -258,7 +258,8 @@ class WalletService
     }
 
     // انتقال از خزانه داری به کیف پول
-    public function transferFromTreasury($amount, $currencyId, $description, $wallet_id) {
+    public function transferFromTreasury($amount, $currencyId, $description, $wallet_id)
+    {
         $wallet = Wallet::find($wallet_id);
         if (!$wallet) {
             throw new \Exception('کیف پول یافت نشد');
@@ -298,7 +299,7 @@ class WalletService
             $treasuryBalance->save();
 
             Transaction::create([
-                'from_wallet_id' => 1 , // خزانه داری
+                'from_wallet_id' => 1, // خزانه داری
                 'to_wallet_id' => $wallet->id,
                 'amount' => $amount,
                 'type' => 'transfer',
@@ -310,7 +311,8 @@ class WalletService
     }
 
     // انتقال از کیف پول به خزانه داری
-    public function transferToTreasury($amount, $currencyId, $description, $wallet_id) {
+    public function transferToTreasury($amount, $currencyId, $description, $wallet_id)
+    {
         $wallet = Wallet::find($wallet_id);
         if (!$wallet) {
             throw new \Exception('کیف پول یافت نشد');
@@ -341,7 +343,7 @@ class WalletService
 
             Transaction::create([
                 'from_wallet_id' => $wallet->id,
-                'to_wallet_id' => 1 , // خزانه داری
+                'to_wallet_id' => 1, // خزانه داری
                 'amount' => $amount,
                 'type' => 'transfer',
                 'description' => $description,
@@ -349,5 +351,104 @@ class WalletService
         });
 
         return true;
+    }
+
+    // انتقال بین کیف پول‌ها
+    public function transferTransaction($fromWallet_id, $toWallet_id, $amount, $currencyId, $description = null)
+    {
+        $fromWallet = Wallet::find($fromWallet_id);
+        if (!$fromWallet) {
+            return [
+                "status" => false,
+                "code" => 1,
+                "message" => "Origin wallet not found"
+            ];
+        }
+
+        $toWallet = Wallet::find($toWallet_id);
+        if (!$toWallet) {
+            return [
+                "status" => false,
+                "code" => 2,
+                "message" => "Destination wallet not found"
+            ];
+        }
+
+        $currency = Currency::find($currencyId);
+        if (!$currency) {
+            return [
+                "status" => false,
+                "code" => 3,
+                "message" => "Currency not found"
+            ];
+        }
+
+        $fromBalance = WalletBalance::where('wallet_id', $fromWallet->id)
+            ->where('currency_id', $currencyId)
+            ->first();
+
+        if (!$fromBalance) {
+            return [
+                "status" => false,
+                "code" => 4,
+                "message" => "Origin wallet doses not have this currency"
+            ];
+        }
+
+        if ($fromBalance->balance < $amount) {
+            return [
+                "status" => false,
+                "code" => 5,
+                "message" => "Origin wallet does not have enough balance"
+            ];
+        }
+
+        $toBalance = WalletBalance::where('wallet_id', $toWallet->id)
+            ->where('currency_id', $currencyId)
+            ->first();
+
+        if (!$toBalance) {
+            $toBalance = WalletBalance::create([
+                'wallet_id' => $toWallet->id,
+                'currency_id' => $currencyId,
+                'balance' => 0,
+            ]);
+        }
+
+        DB::transaction(function () use ($fromBalance, $toBalance, $amount, $description) {
+            $fromBalance->balance -= $amount;
+            $toBalance->balance += $amount;
+            $fromBalance->save();
+            $toBalance->save();
+
+            Transaction::create([
+                'from_wallet_id' => $fromBalance->wallet_id,
+                'to_wallet_id' => $toBalance->wallet_id,
+                'amount' => $amount,
+                'type' => 'transfer',
+                'description' => $description,
+            ]);
+        });
+
+        $fromWalletOwner = $fromWallet->user;
+        $fromWalletOwnerFullName = $fromWalletOwner->first_name . ' ' . $fromWalletOwner->last_name;
+
+        $toWalletOwner = $fromWallet->user;
+        $toWalletOwnerFullName = $toWalletOwner->first_name . ' ' . $toWalletOwner->last_name;
+
+        $currencySymbol = $currency->symbol;
+
+        if ($fromWalletOwner->id == 1) {
+            $toWallet->user->addNotification("Treasury trasfer", "واریز وجه", "مبلغ $amount $currencySymbol بابت $description از طرف خزانه داری به کیف پول شما واریز شد");
+        } else {
+            $fromWallet->user->addNotification("transfer", "انتقال وجه", "مبلغ $amount $currencySymbol بابت $description از کیف پول شما به کیف پول $toWalletOwnerFullName واریز شد");
+            $toWallet->user->addNotification("transfer", "انتقال وجه", "مبلغ $amount $currencySymbol بابت $description از کیف پول $fromWalletOwnerFullName به کیف پول شما واریز شد");
+        }
+
+        return [
+            "status" => true,
+            "code" => 0,
+            "message" => "Transaction created successfully"
+        ];
     }
 }
