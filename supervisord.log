@@ -1,0 +1,2 @@
+2025-10-27 07:09:42,936 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-10-27 07:09:42,942 INFO supervisord started with pid 1

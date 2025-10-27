@@ -1,0 +1,64 @@
+version: '4.48'
+
+services:
+
+  # ----- 1. سرویس بک‌اند (پروژه لاراول تو) -----
+  backend:
+    build:
+      context: . # از Dockerfile همین پوشه استفاده کن
+    container_name: facepay_backend
+    ports:
+      - "8000:80" # پورت 8000 سیستم تو رو به پورت 80 کانتینر (Nginx) وصل می‌کنه
+    env_file:
+      - .env # تمام متغیرهای .env رو به کانتینر تزریق می‌کنه
+    volumes:
+      - .:/var/www/html # کدها رو سینک می‌کنه
+      - /var/www/html/vendor # این پوشه رو سینک نکن
+    networks:
+      - facepay_net
+    depends_on: # اول منتظر اینا بمون
+      - db
+      - minio
+
+  # ----- 2. سرویس دیتابیس (بر اساس فایل تو) -----
+  db:
+    image: ankane/pgvector:latest
+    container_name: facepay_db
+    environment:
+      # اینها رو از فایل .env می‌خونه
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432" # پورت pgAdmin
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - facepay_net
+
+  # ----- 3. سرویس MinIO (ذخیره‌سازی) -----
+  minio:
+    image: minio/minio:latest
+    container_name: facepay_minio
+    ports:
+      - "9000:9000" # پورت API
+      - "9001:9001" # پورت کنسول وب
+    environment:
+      # اینها رو هم از فایل .env می‌خونه
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY_ID}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_ACCESS_KEY}
+    volumes:
+      - minio_data:/data # برای ذخیره دائمی فایل‌ها
+    networks:
+      - facepay_net
+    command: server /data --console-address ":9001"
+
+# تعریف شبکه‌ای که سرویس‌ها بتونن همدیگه رو ببینن
+networks:
+  facepay_net:
+    driver: bridge
+
+# تعریف وُلیوم‌ها برای ذخیره دائمی داده‌ها
+volumes:
+  pg_data:
+  minio_data:
