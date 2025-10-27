@@ -31,7 +31,6 @@ class OtpService
 
     public function generate(string $identity, string $channel): string
     {
-        // بررسی OTP اخیر
         $recentOtp = Otp::where('identity', $identity)
             ->where('created_at', '>=', now()->subMinute())
             ->first();
@@ -43,7 +42,7 @@ class OtpService
         $token = Str::uuid();
 
         $otp = Otp::create([
-            'identity' => $identity, // ذخیره شماره اصلی
+            'identity' => $identity,
             'channel' => $channel,
             'code' => $code,
             'token' => $token,

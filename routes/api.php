@@ -26,6 +26,15 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:sanctum')->group(function () {
+
+        // Notifications
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index']);
+            Route::get('/unread', [NotificationController::class, 'unread']);
+            Route::patch('/read', [NotificationController::class, 'markAsRead']);
+            Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
+        });
+
         // Support
         Route::prefix('support')->group(function () {
             Route::get('/tickets', [TicketController::class, 'index']);
@@ -36,13 +45,6 @@ Route::prefix('v1')->group(function () {
             Route::post('/tickets/{id}/message', [TicketController::class, 'sendMessage']);
             Route::delete('/tickets/{id}', [TicketController::class, 'destroy']);
             Route::get('/departments', [TicketController::class, 'departments']);
-        });
-
-        Route::prefix('notifications')->group(function () {
-            Route::get('/', [NotificationController::class, 'index']);
-            Route::get('/unread', [NotificationController::class, 'unread']);
-            Route::patch('/read', [NotificationController::class, 'markAsRead']);
-            Route::patch('/read-all', [NotificationController::class, 'markAllAsRead']);
         });
 
         // Wallet

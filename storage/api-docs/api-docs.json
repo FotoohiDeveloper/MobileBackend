@@ -1,0 +1,524 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "MyHapaDocument",
+        "version": "1.2"
+    },
+    "paths": {
+        "/api/v1/notifications": {
+            "get": {
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Get a list of notifications",
+                "description": "Retrieve a list of notifications for the authenticated user",
+                "operationId": "f840a445048dd4bb44357e5a7918027e",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "id": {
+                                                "description": "Notification ID",
+                                                "type": "integer",
+                                                "example": 1
+                                            },
+                                            "message": {
+                                                "description": "Notification message",
+                                                "type": "string",
+                                                "example": "You have a new message"
+                                            },
+                                            "created_at": {
+                                                "description": "Notification creation timestamp",
+                                                "type": "string",
+                                                "format": "date-time",
+                                                "example": "2025-05-15T14:15:00.000000Z"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "description": "Operation status",
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "description": "Error message",
+                                            "type": "string",
+                                            "example": "Invalid request parameters"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "description": "Operation status",
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "description": "Error message",
+                                            "type": "string",
+                                            "example": "Unauthorized"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/otp/send": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Send OTP",
+                "description": "Send OTP to user via SMS",
+                "operationId": "sendOtp",
+                "requestBody": {
+                    "description": "User contact information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "identity",
+                                    "channel"
+                                ],
+                                "properties": {
+                                    "identity": {
+                                        "description": "User's phone number",
+                                        "type": "string",
+                                        "example": "+989123456789"
+                                    },
+                                    "channel": {
+                                        "description": "Channel to send OTP",
+                                        "type": "string",
+                                        "enum": [
+                                            "sms"
+                                        ],
+                                        "example": "sms"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "description": "Operation status",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "token": {
+                                            "description": "Unique token for OTP verification",
+                                            "type": "string",
+                                            "example": "667c7641-1921-42ea-966c-cb7766bdfc86"
+                                        },
+                                        "message": {
+                                            "description": "Response message",
+                                            "type": "string",
+                                            "example": "OTP sent."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/otp/verify": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify OTP",
+                "description": "Verify OTP sent to user",
+                "operationId": "verifyOtp",
+                "requestBody": {
+                    "description": "OTP verification data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token",
+                                    "code"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "description": "Unique token for OTP verification",
+                                        "type": "string",
+                                        "example": "667c7641-1921-42ea-966c-cb7766bdfc86"
+                                    },
+                                    "code": {
+                                        "description": "OTP code",
+                                        "type": "integer",
+                                        "example": 123456
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "description": "Response when user has an existing account",
+                                            "properties": {
+                                                "status": {
+                                                    "description": "Operation status",
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "message": {
+                                                    "description": "Response message",
+                                                    "type": "string",
+                                                    "example": "OTP verified. You are now logged in."
+                                                },
+                                                "user": {
+                                                    "properties": {
+                                                        "id": {
+                                                            "description": "User ID",
+                                                            "type": "integer",
+                                                            "example": 2
+                                                        },
+                                                        "first_name": {
+                                                            "description": "User's first name",
+                                                            "type": "string",
+                                                            "example": "نام"
+                                                        },
+                                                        "last_name": {
+                                                            "description": "User's last name",
+                                                            "type": "string",
+                                                            "example": "نام خانوادگی"
+                                                        },
+                                                        "father_name": {
+                                                            "description": "User's father name",
+                                                            "type": "string",
+                                                            "example": "نام پدر"
+                                                        },
+                                                        "phone_number": {
+                                                            "description": "User's phone number",
+                                                            "type": "string",
+                                                            "example": "+989123456789"
+                                                        },
+                                                        "national_code": {
+                                                            "description": "User's national code",
+                                                            "type": "string",
+                                                            "example": "0012345678"
+                                                        },
+                                                        "passport_number": {
+                                                            "description": "User's passport number",
+                                                            "type": "string",
+                                                            "example": null,
+                                                            "nullable": true
+                                                        },
+                                                        "passport_expiry_date": {
+                                                            "description": "Passport expiry date",
+                                                            "type": "string",
+                                                            "example": null,
+                                                            "nullable": true
+                                                        },
+                                                        "is_verified": {
+                                                            "description": "Verification status",
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "birth_date": {
+                                                            "description": "User's birth date",
+                                                            "type": "string",
+                                                            "example": "1310/06/30"
+                                                        },
+                                                        "image": {
+                                                            "description": "User's profile image in base64",
+                                                            "type": "string",
+                                                            "example": "base64image"
+                                                        },
+                                                        "email": {
+                                                            "description": "User's email",
+                                                            "type": "string",
+                                                            "example": null,
+                                                            "nullable": true
+                                                        },
+                                                        "email_verified_at": {
+                                                            "description": "Email verification timestamp",
+                                                            "type": "string",
+                                                            "example": null,
+                                                            "nullable": true
+                                                        },
+                                                        "locale": {
+                                                            "description": "User's locale",
+                                                            "type": "string",
+                                                            "example": "fa"
+                                                        },
+                                                        "remember_token": {
+                                                            "description": "Remember token",
+                                                            "type": "string",
+                                                            "example": null,
+                                                            "nullable": true
+                                                        },
+                                                        "created_at": {
+                                                            "description": "Account creation timestamp",
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-05-15T10:32:14.000000Z"
+                                                        },
+                                                        "updated_at": {
+                                                            "description": "Account update timestamp",
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-05-15T10:32:14.000000Z"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "auth_token": {
+                                                    "description": "Authentication token",
+                                                    "type": "string",
+                                                    "example": "2|iKaaaaaaaaaaaaaaaaaaaa6cU1qr5m2SCBk1TyWd934ae54c"
+                                                },
+                                                "code": {
+                                                    "description": "Response code",
+                                                    "type": "integer",
+                                                    "example": 200
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        {
+                                            "description": "Response when user does not have an account",
+                                            "properties": {
+                                                "status": {
+                                                    "description": "Operation status",
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "message": {
+                                                    "description": "Response message",
+                                                    "type": "string",
+                                                    "example": "OTP verified. Please provide birth date and national code to complete registration."
+                                                },
+                                                "otp_token": {
+                                                    "description": "Token for next step",
+                                                    "type": "string",
+                                                    "example": "0762d415-6764-4165-be65-ce73927525ad"
+                                                },
+                                                "next_step": {
+                                                    "description": "Next step in registration process",
+                                                    "type": "string",
+                                                    "example": "identity_verification"
+                                                },
+                                                "code": {
+                                                    "description": "Response code",
+                                                    "type": "integer",
+                                                    "example": 200
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "description": "Operation status",
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "description": "Error message",
+                                            "type": "string",
+                                            "example": "Invalid OTP code."
+                                        },
+                                        "code": {
+                                            "description": "Response code",
+                                            "type": "integer",
+                                            "example": 400
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/otp/verify-identity": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify Identity",
+                "description": "Verify user's identity using OTP and national code",
+                "operationId": "verifyIdentity",
+                "requestBody": {
+                    "description": "Identity verification data",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token",
+                                    "birth_date",
+                                    "national_code"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "description": "Unique token for OTP verification",
+                                        "type": "string",
+                                        "example": "667c7641-1921-42ea-966c-cb7766bdfc86"
+                                    },
+                                    "birth_date": {
+                                        "description": "User's birth date",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1310/06/30"
+                                    },
+                                    "national_code": {
+                                        "description": "User's national code",
+                                        "type": "string",
+                                        "example": "0012345678"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "description": "Operation status",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "description": "Response message",
+                                            "type": "string",
+                                            "example": "Registration and identity verification completed successfully."
+                                        },
+                                        "user": {
+                                            "type": "object"
+                                        },
+                                        "auth_token": {
+                                            "description": "Authentication token",
+                                            "type": "string",
+                                            "example": "2|iKaaaaaaaaaaaaaaaaaaaa6cU1qr5m2SCBk1TyWd934ae54c"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    }
+                }
+            }
+        },
+        "/api/wallets": {
+            "get": {
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Get a list of users",
+                "operationId": "454e4ad42ba4b26d3340efd07f945b4b",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation"
+                    },
+                    "400": {
+                        "description": "Invalid request"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Enter your Bearer token in the format: Bearer {token}",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Notification",
+            "description": "Notification"
+        },
+        {
+            "name": "Auth",
+            "description": "Auth"
+        },
+        {
+            "name": "Wallet",
+            "description": "Wallet"
+        }
+    ]
+}

@@ -6,6 +6,8 @@ use App\Models\WalletBalance;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Lang;
+use OpenApi\Attributes as OA;
+
 
 class WalletController extends Controller
 {
@@ -18,6 +20,15 @@ class WalletController extends Controller
         $this->user = $request->user();
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/wallets",
+     *     summary="Get a list of users",
+     *     tags={"Wallet"},
+     *     @OA\Response(response=200, description="Successful operation"),
+     *     @OA\Response(response=400, description="Invalid request")
+     * )
+     */
     public function index(Request $request)
     {
         $wallets = $request->user()->wallets()->get();
@@ -158,6 +169,4 @@ class WalletController extends Controller
             ],
         ]);
     }
-
-
 }

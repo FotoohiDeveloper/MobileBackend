@@ -13,6 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use OpenApi\Attributes as OA;
 
 class OtpController extends Controller
 {
@@ -25,6 +26,34 @@ class OtpController extends Controller
         $this->walletService = $walletService;
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/v1/auth/otp/send",
+     *     summary="Send OTP",
+     *     description="Send OTP to user via SMS",
+     *     operationId="sendOtp",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="User contact information",
+     *         @OA\JsonContent(
+     *             required={"identity", "channel"},
+     *             @OA\Property(property="identity", type="string", example="+989123456789", description="User's phone number"),
+     *             @OA\Property(property="channel", type="string", enum={"sms"}, example="sms", description="Channel to send OTP")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="boolean", example=true, description="Operation status"),
+     *             @OA\Property(property="token", type="string", example="667c7641-1921-42ea-966c-cb7766bdfc86", description="Unique token for OTP verification"),
+     *             @OA\Property(property="message", type="string", example="OTP sent.", description="Response message")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Invalid request")
+     * )
+     */
     public function send(Request $request)
     {
         $data = $request->validate([
@@ -47,6 +76,77 @@ class OtpController extends Controller
         }
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/v1/auth/otp/verify",
+     *     summary="Verify OTP",
+     *     description="Verify OTP sent to user",
+     *     operationId="verifyOtp",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="OTP verification data",
+     *         @OA\JsonContent(
+     *             required={"token", "code"},
+     *             @OA\Property(property="token", type="string", example="667c7641-1921-42ea-966c-cb7766bdfc86", description="Unique token for OTP verification"),
+     *             @OA\Property(property="code", type="integer", example=123456, description="OTP code")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             oneOf={
+     *                 @OA\Schema(
+     *                     description="Response when user has an existing account",
+     *                     @OA\Property(property="status", type="boolean", example=true, description="Operation status"),
+     *                     @OA\Property(property="message", type="string", example="OTP verified. You are now logged in.", description="Response message"),
+     *                     @OA\Property(
+     *                         property="user",
+     *                         type="object",
+     *                         @OA\Property(property="id", type="integer", example=2, description="User ID"),
+     *                         @OA\Property(property="first_name", type="string", example="نام", description="User's first name"),
+     *                         @OA\Property(property="last_name", type="string", example="نام خانوادگی", description="User's last name"),
+     *                         @OA\Property(property="father_name", type="string", example="نام پدر", description="User's father name"),
+     *                         @OA\Property(property="phone_number", type="string", example="+989123456789", description="User's phone number"),
+     *                         @OA\Property(property="national_code", type="string", example="0012345678", description="User's national code"),
+     *                         @OA\Property(property="passport_number", type="string", nullable=true, example=null, description="User's passport number"),
+     *                         @OA\Property(property="passport_expiry_date", type="string", nullable=true, example=null, description="Passport expiry date"),
+     *                         @OA\Property(property="is_verified", type="integer", example=1, description="Verification status"),
+     *                         @OA\Property(property="birth_date", type="string", example="1310/06/30", description="User's birth date"),
+     *                         @OA\Property(property="image", type="string", example="base64image", description="User's profile image in base64"),
+     *                         @OA\Property(property="email", type="string", nullable=true, example=null, description="User's email"),
+     *                         @OA\Property(property="email_verified_at", type="string", nullable=true, example=null, description="Email verification timestamp"),
+     *                         @OA\Property(property="locale", type="string", example="fa", description="User's locale"),
+     *                         @OA\Property(property="remember_token", type="string", nullable=true, example=null, description="Remember token"),
+     *                         @OA\Property(property="created_at", type="string", format="date-time", example="2025-05-15T10:32:14.000000Z", description="Account creation timestamp"),
+     *                         @OA\Property(property="updated_at", type="string", format="date-time", example="2025-05-15T10:32:14.000000Z", description="Account update timestamp")
+     *                     ),
+     *                     @OA\Property(property="auth_token", type="string", example="2|iKaaaaaaaaaaaaaaaaaaaa6cU1qr5m2SCBk1TyWd934ae54c", description="Authentication token"),
+     *                     @OA\Property(property="code", type="integer", example=200, description="Response code")
+     *                 ),
+     *                 @OA\Schema(
+     *                     description="Response when user does not have an account",
+     *                     @OA\Property(property="status", type="boolean", example=true, description="Operation status"),
+     *                     @OA\Property(property="message", type="string", example="OTP verified. Please provide birth date and national code to complete registration.", description="Response message"),
+     *                     @OA\Property(property="otp_token", type="string", example="0762d415-6764-4165-be65-ce73927525ad", description="Token for next step"),
+     *                     @OA\Property(property="next_step", type="string", example="identity_verification", description="Next step in registration process"),
+     *                     @OA\Property(property="code", type="integer", example=200, description="Response code")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid request",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="boolean", example=false, description="Operation status"),
+     *             @OA\Property(property="message", type="string", example="Invalid OTP code.", description="Error message"),
+     *             @OA\Property(property="code", type="integer", example=400, description="Response code")
+     *         )
+     *     )
+     * )
+     */
     public function verify(Request $request)
     {
         $data = $request->validate([
@@ -58,6 +158,36 @@ class OtpController extends Controller
         return response()->json($result, $result['code']);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/v1/auth/otp/verify-identity",
+     *     summary="Verify Identity",
+     *     description="Verify user's identity using OTP and national code",
+     *     operationId="verifyIdentity",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Identity verification data",
+     *         @OA\JsonContent(
+     *             required={"token", "birth_date", "national_code"},
+     *             @OA\Property(property="token", type="string", example="667c7641-1921-42ea-966c-cb7766bdfc86", description="Unique token for OTP verification"),
+     *             @OA\Property(property="birth_date", type="string", format="date", example="1310/06/30", description="User's birth date"),
+     *             @OA\Property(property="national_code", type="string", example="0012345678", description="User's national code")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="boolean", example=true, description="Operation status"),
+     *             @OA\Property(property="message", type="string", example="Registration and identity verification completed successfully.", description="Response message"),
+     *             @OA\Property(property="user", type="object"),
+     *             @OA\Property(property="auth_token", type="string", example="2|iKaaaaaaaaaaaaaaaaaaaa6cU1qr5m2SCBk1TyWd934ae54c", description="Authentication token")
+     *         )
+     *     ),
+     *     @OA\Response(response=400, description="Invalid request")
+     * )
+     */
     public function verifyIdentity(Request $request)
     {
         $data = $request->validate([
