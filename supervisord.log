@@ -1,2 +1,24 @@
 2025-10-27 07:09:42,936 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
 2025-10-27 07:09:42,942 INFO supervisord started with pid 1
+2025-10-27 07:09:43,946 INFO spawned: 'nginx' with pid 7
+2025-10-27 07:09:43,950 INFO spawnerr: can't find command 'php-fpm8.2'
+2025-10-27 07:09:44,976 INFO success: nginx entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-10-27 07:09:44,990 INFO spawnerr: can't find command 'php-fpm8.2'
+2025-10-27 07:09:46,994 INFO spawnerr: can't find command 'php-fpm8.2'
+2025-10-27 07:09:49,999 INFO spawnerr: can't find command 'php-fpm8.2'
+2025-10-27 07:09:50,000 INFO gave up: php-fpm entered FATAL state, too many start retries too quickly
+2025-10-27 07:14:47,355 INFO reaped unknown pid 166 (exit status 0)
+2025-10-27 07:15:02,373 INFO reaped unknown pid 197 (exit status 0)
+2025-10-27 07:24:24,044 WARN received SIGQUIT indicating exit request
+2025-10-27 07:24:24,045 INFO waiting for nginx to die
+2025-10-27 16:03:53,690 CRIT Supervisor is running as root.  Privileges were not dropped because no user is specified in the config file.  If you intend to run as root, you can set user=root in the config file to avoid this message.
+2025-10-27 16:03:53,697 INFO supervisord started with pid 1
+2025-10-27 16:03:54,700 INFO spawned: 'nginx' with pid 7
+2025-10-27 16:03:54,701 INFO spawnerr: can't find command 'php-fpm8.2'
+2025-10-27 16:03:55,720 INFO success: nginx entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2025-10-27 16:03:55,720 INFO spawnerr: can't find command 'php-fpm8.2'
+2025-10-27 16:03:57,724 INFO spawnerr: can't find command 'php-fpm8.2'
+2025-10-27 16:04:00,728 INFO spawnerr: can't find command 'php-fpm8.2'
+2025-10-27 16:04:00,728 INFO gave up: php-fpm entered FATAL state, too many start retries too quickly
+2025-10-27 16:09:19,097 WARN received SIGQUIT indicating exit request
+2025-10-27 16:09:19,098 INFO waiting for nginx to die
