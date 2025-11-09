@@ -14,7 +14,7 @@ return new class extends Migration {
 
             $table->string('kyc_image_url', 1024)->nullable()->after('id_card_image');
 
-            $table->foreignUuid('merchant_id')->nullable()->after('kyc_image_url')
+            $table->foreignId('merchant_id')->nullable()->after('kyc_image_url')
                   ->constrained('merchants')->nullOnDelete();
 
             if (Schema::hasColumn('users', 'id_card_image')) {

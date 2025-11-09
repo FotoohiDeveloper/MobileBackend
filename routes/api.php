@@ -16,7 +16,7 @@ use App\Http\Controllers\V1\Tourist\TouristPaymentController;
 
 Route::prefix('v1')->group(function () {
 
-    // Auth & Identity
+    // User Auth & Identity
     Route::prefix('auth')->group(function () {
         Route::prefix('otp')->group(function () {
             Route::post('/send', [OtpController::class, 'send']);

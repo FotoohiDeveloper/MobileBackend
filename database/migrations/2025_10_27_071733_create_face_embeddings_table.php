@@ -17,7 +17,7 @@ return new class extends Migration
 
         Schema::create('face_embeddings', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
 
             // این ستون درسته، چون پکیج pgvector-php اینو اضافه می‌کنه
             $table->vector('embedding_vector', 512);

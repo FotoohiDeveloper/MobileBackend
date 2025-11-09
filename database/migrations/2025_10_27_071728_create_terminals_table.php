@@ -7,7 +7,7 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('terminals', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('merchant_id')->constrained('merchants')->cascadeOnDelete();
+            $table->foreignId('merchant_id')->constrained('merchants')->cascadeOnDelete(); // <-- این درسته
             $table->string('name');
             $table->string('location_description')->nullable();
             $table->string('api_key_hash')->unique();

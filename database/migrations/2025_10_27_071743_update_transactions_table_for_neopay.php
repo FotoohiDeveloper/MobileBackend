@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->foreignUuid('merchant_id')->nullable()->after('to_wallet_id')
+            $table->foreignId('merchant_id')->nullable()->after('to_wallet_id')
                   ->constrained('merchants')->nullOnDelete();
-            $table->foreignUuid('terminal_id')->nullable()->after('merchant_id')
+            $table->foreignId('terminal_id')->nullable()->after('merchant_id')
                   ->constrained('terminals')->nullOnDelete();
             $table->string('capture_image_url', 1024)->nullable()->after('meta');
         });
